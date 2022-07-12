@@ -1,0 +1,575 @@
+---
+title: "Projeto 1 v2"
+author: "André"
+date: "04/07/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library('ggplot2')
+library('xtable')
+library('FactoMineR')
+library('factoextra')
+library('data.table')
+library('RColorBrewer')
+```
+
+## Leitura da Base
+
+```{r nomes}
+descricao_variaveis = c("dirige automóvel(excluindo motocicleta)", "uso de cinto(direção)", "uso de cinto(banco da frente)", "uso de cinto(banco de trás)", "dirige motocicleta",
+"uso de capacete(direção)", "uso de capacete(passageiro)",
+"manuseio de celular(condução)",
+"condução acima da velocidade permitida",
+"envolvimento em algum acidente",
+"Sim - Quantos?",
+"acidente durante horário de trabalho",
+"o que fazia no momento do acidente",
+"deixou de realizar atividades",
+"recebeu de atendimento de saúde",
+"onde recebeu o primeiro atendimento",
+"quem prestou atendimento no local",
+"internação (24horas ou mais)",
+"presença sequela física permanente",
+"envolvimento em algum acidente de trabalho",
+"Sim, Quantos",
+"deixou de realizar atividades",
+"internação (24horas ou mais)",
+"presença sequela física permanente")
+
+firstup = function(x) {
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x
+}
+
+descricao_variaveis = firstup(descricao_variaveis)
+```
+
+```{r leitura}
+load('dados_O.RData')
+
+porcentagem_de_na = sapply(dados_O, function(x) paste0(100*round(sum(is.na(x))/length(x),3),'%'))
+
+###Percentagem de respostas ausentes por variável:
+porcentagem_de_na |> as.matrix() |> t()# |> xtable()
+
+```
+
+```{r process}
+indices = which(colnames(dados_O) %in% c("O00101", "O00401","O00402", "O00501","O00701","O00201","O00801","O00802","O00803",
+            "O009","O00901","O010","O01102","O01401","O01501",
+            "O01602","O01702","O019","O02001","O021","O02201","O023","O02401"))
+
+dados_transito = dados_O[,c("O00101", "O00401","O00402", "O00501","O00201","O00701","O00801","O00802","O00803",
+                            "O009","O00901","O010","O01102","O01401","O01501",
+                            "O01602","O01702","O019","O02001",
+                            "O021","O02201","O023","O02401")]
+
+dados_transito$O00101 = ifelse(dados_transito$O00101  == 1, 'Sim', "Não")
+
+dados_transito$O00401 = ifelse(dados_transito$O00401  == 1, '1 - Sempre',
+                                            ifelse(dados_transito$O00401  == 2, '2 - Quase Sempre',
+                                                   ifelse(dados_transito$O00401  == 3, "3 - As vezes",
+                                                          ifelse(dados_transito$O00401  == 4, "4 - Raramente",
+                                                                 "5 - Nunca"))))
+
+dados_transito$O00402 = ifelse(dados_transito$O00402  == 1, '1 - Não se Aplica',
+                               ifelse(dados_transito$O00402  == 2, '2 - Sempre', 
+                                      ifelse(dados_transito$O00402  == 3, '3 - Quase Sempre',
+                                             ifelse(dados_transito$O00402  == 4, "4 - As vezes",
+                                                    ifelse(dados_transito$O00402  == 5, "5 - Raramente",
+                                                           "6 - Nunca")))))
+
+dados_transito$O00501 = ifelse(dados_transito$O00501  == 1, '1 - Não se Aplica',
+                                             ifelse(dados_transito$O00501  == 2, '2 - Sempre', 
+                                                    ifelse(dados_transito$O00501  == 3, '3 - Quase Sempre',
+                                                           ifelse(dados_transito$O00501  == 4, "4 - As vezes",
+                                                                  ifelse(dados_transito$O00501  == 5, "5 - Raramente",
+                                                                         "6 - Nunca")))))
+
+dados_transito$O00701 = ifelse(dados_transito$O00701  == 1, '1 - Sempre',
+                                             ifelse(dados_transito$O00701  == 2, '2 - Quase Sempre',
+                                                    ifelse(dados_transito$O00701  == 3, "3 - As vezes",
+                                                           ifelse(dados_transito$O00701  == 4, "4 - Raramente",
+                                                                  "5 - Nunca"))))
+
+dados_transito$O00201 = ifelse(dados_transito$O00201  == 1, 'Sim', "Não")
+
+dados_transito$O00801 = ifelse(dados_transito$O00801  == 1, '1 - Não se Aplica',
+                                             ifelse(dados_transito$O00801  == 2, '2 - Sempre', 
+                                                    ifelse(dados_transito$O00801  == 3, '3 - Quase Sempre',
+                                                           ifelse(dados_transito$O00801  == 4, "4 - As vezes",
+                                                                  ifelse(dados_transito$O00801  == 5, "5 - Raramente",
+                                                                         "6 - Nunca")))))
+
+dados_transito$O00802 = ifelse(dados_transito$O00802  == 1, '1 - Sempre',
+                               ifelse(dados_transito$O00802  == 2, '2 - Quase Sempre',
+                                      ifelse(dados_transito$O00802  == 3, "3 - As vezes",
+                                             ifelse(dados_transito$O00802  == 4, "4 - Raramente",
+                                                    "5 - Nunca"))))
+
+dados_transito$O00803 = ifelse(dados_transito$O00803  == 1, '1 - Sempre',
+                               ifelse(dados_transito$O00803  == 2, '2 - Quase Sempre',
+                                      ifelse(dados_transito$O00803  == 3, "3 - As vezes",
+                                             ifelse(dados_transito$O00803  == 4, "4 - Raramente",
+                                                    "5 - Nunca"))))
+
+dados_transito$O009 = ifelse(dados_transito$O009  == 1, 'Sim', 'Não')
+
+dados_transito$O010 = ifelse(dados_transito$O010  == 1, '1 - Trabalhando',
+                             ifelse(dados_transito$O010  == 2, '2 - Voltando do Trabalho', "3 - Não"))
+
+
+dados_transito$O01102 = ifelse(dados_transito$O01102  == 1, '1 - Condutor/Carro', 
+                               ifelse(dados_transito$O01102  == 2, '2 - Condutor/Ônibus', 
+                                      ifelse(dados_transito$O01102  == 3, '3 - Condutor/Caminhão',                    
+                                             ifelse(dados_transito$O01102  == 4, "4 - Condutor/Motocicleta",                        
+                                                    ifelse(dados_transito$O01102  == 5, "5 - Condutor/Bicicleta",
+                                                           ifelse(dados_transito$O01102  == 6, '6 - Passageiro/Carro', 
+                                                                  ifelse(dados_transito$O01102  == 7, '7 - Passageiro/Ônibus',                    
+                                                                         ifelse(dados_transito$O01102  == 8, "8 - Passageiro/Caminhão",                        
+                                                                                ifelse(dados_transito$O01102  == 9, "9 - Passageiro/Motocicleta",                                    ifelse(dados_transito$O01102  == 10, "10 - Passageiro/Bicicleta",
+                                                                                                                                                                                            ifelse(dados_transito$O01102  == 11, "11 - Pedestre","Outro")))))))))))
+
+dados_transito$O01401 = ifelse(dados_transito$O01401  == 1, 'Sim', 'Não')
+
+dados_transito$O01501 = ifelse(dados_transito$O01501  == 1, 'Sim', 'Não')
+
+dados_transito$O01602 = ifelse(dados_transito$O01602  == 1, '1 - Local do Acidente', 
+                               ifelse(dados_transito$O01602  == 2, '2 - Unidade Básica', 
+                                      ifelse(dados_transito$O01602  == 3, '3 - Poli/PAM/CEP',                    
+                                             ifelse(dados_transito$O01602  == 4, "4 - UPA",                        
+                                                    ifelse(dados_transito$O01602  == 5, "5 - Ambulatório",
+                                                           ifelse(dados_transito$O01602  == 6, '6 - Particular', 
+                                                                  ifelse(dados_transito$O01602  == 7, '7 - Pronto Atendimento',                    
+                                                                         ifelse(dados_transito$O01602  == 8, "8 - Domícilio", "Outro"))))))))
+
+dados_transito$O01702 = ifelse(dados_transito$O01702  == 1, '1 - SAMU', 
+                               ifelse(dados_transito$O01702  == 2, '2 - Bombeiros', 
+                                      ifelse(dados_transito$O01702  == 3, '3 - Equipe Setor Privado',                    
+                                             ifelse(dados_transito$O01702  == 4, "4 - Equipe Rodovia", "Outro"))))
+
+dados_transito$O019 = ifelse(dados_transito$O019  == 1, 'Sim', 'Não')
+
+dados_transito$O02001 = ifelse(dados_transito$O02001  == 1, 'Sim', 'Não')
+
+dados_transito$O021 = ifelse(dados_transito$O021 == 1, '1 - Sim', 
+                             ifelse(dados_transito$O021 == 2, '2 - Não',
+                                    '3 - Não se Aplica'))
+
+dados_transito$O02201 = ifelse(dados_transito$O02201  == 1, 'Sim', 'Não')
+
+dados_transito$O023 = ifelse(dados_transito$O023  == 1, 'Sim', 'Não')
+
+dados_transito$O02401  = ifelse(dados_transito$O02401  == 1, 'Sim', 'Não')
+
+dados_transito = lapply(dados_transito, as.factor) |> as.data.frame()
+```
+
+## Construindo as Figuras
+```{r construindo figuras e tabelas}
+
+paleta = colorRampPalette(brewer.pal(9,"Set1"))(11)
+grafs = lapply(c(1:ncol(dados_transito)),
+               function(col) {
+                 coluna = data.frame(x =   as.factor(dados_transito[[col]][!is.na(dados_transito[[col]])]))
+                 
+                 coluna = data.frame(qtd = table(coluna$x),per = table(coluna$x)/sum(table(coluna$x)))[,-3]
+                 
+                 colnames(coluna) = c("Categoria", "Qtde", "Percentual")
+                 
+                 ggplot2::ggplot(coluna) +
+                   geom_col(aes(x = Categoria, y = Percentual, fill = Categoria)) +
+                   geom_text(aes(x = Categoria, y = Percentual, label = paste0(100*round(Percentual, 4),'%')), vjust = -1.5, colour = "royalblue") +
+                   theme_minimal() +
+                   theme(plot.title = element_text(hjust = 0.5),
+                         legend.position = 'bottom',
+                         axis.text.x=element_blank(),
+                         legend.text = element_text(size = 11)) +
+                   labs(x = dimnames(dados_transito)[[2]][col], y = 'Porcentagem',
+                        title = descricao_variaveis[indices][col]
+                        ) +
+                   #scale_fill_brewer(name = "", palette = "Set1")
+                   scale_fill_manual(name = "", values = paleta)
+               }
+)
+
+
+###### Tabelas
+lista_tabelas_transito = dados_transito |> sapply(table)
+lista_tabelas_transito = lapply(lista_tabelas_transito, function(x) cbind(x, paste0(100*round(x/sum(x), 3),'%')))
+
+lista_tabelas_transito = lista_tabelas_transito |> lapply(xtable, digits = 3)
+
+#lista_tabelas_transito
+```
+
+## Perguntas direção
+```{r direcao}
+
+#O00101 e #O00201
+fig_dir = gridExtra::grid.arrange(grafs[[1]] + ylim(0,0.8) + labs(subtitle = "(a)"), 
+                        grafs[[5]] + ylim(0,0.8) + labs(subtitle = "(b)"), ncol = 2)
+
+ggsave('perguntas_direcao.pdf', fig_dir, units = "in", width = 7, height = 5)
+
+lista_tabelas_transito[[1]]
+lista_tabelas_transito[[5]]
+```
+
+## Perguntas uso de cinto de segurança
+```{r cinto}
+
+fig_cinto = gridExtra::grid.arrange(grafs[[2]] + ylim(0,1) +
+                                      scale_fill_manual(name = " ", values = paleta[2:11]) +
+                                      labs(subtitle = "(a)") +
+                                      guides(fill = guide_legend(nrow = 2)), 
+                        grafs[[3]] + ylim(0,1) + labs(subtitle = "(b)"),
+                        grafs[[4]] + ylim(0,1) + labs(subtitle = "(c)"), ncol = 2)
+
+ggsave('perguntas_cinto.pdf',fig_cinto, units = "in", width = 11, height = 8)
+
+lista_tabelas_transito[[2]]
+lista_tabelas_transito[[3]]
+lista_tabelas_transito[[4]]
+```
+
+## Uso de capacete ----
+```{r capacete}
+fig_cap = gridExtra::grid.arrange(grafs[[6]] + ylim(0,0.8) + labs(subtitle = "(a)") +
+                                    scale_fill_manual(name = " ", values = paleta[2:11]) +
+                                    guides(fill = guide_legend(nrow = 2)), 
+                        grafs[[7]] + ylim(0,0.8) + labs(subtitle = "(b)"), ncol = 2)
+
+ggsave('perguntas_capacete.pdf',fig_cap, units = "in", width = 11, height = 5)
+
+lista_tabelas_transito[[6]]
+lista_tabelas_transito[[7]]
+```
+
+
+## Outras informações
+```{r outras}
+fig_outros = gridExtra::grid.arrange(grafs[[8]] + ylim(0,0.8) + labs(subtitle = "(a)") +
+                                       guides(fill = guide_legend(nrow = 2)), 
+                                  grafs[[9]] + ylim(0,0.8) + labs(subtitle = "(b)") +
+                                       guides(fill = guide_legend(nrow = 2)), ncol = 2)
+
+ggsave('perguntas_outros.pdf', fig_outros, units = "in", width = 11, height = 5)
+
+lista_tabelas_transito[[8]]
+lista_tabelas_transito[[9]]
+```
+
+## Quando o acidente aconteceu?
+```{r quando}
+fig_acidente = gridExtra::grid.arrange(grafs[[10]] + ylim(0,1) + labs(subtitle = "(a)"), 
+                                     #grafs[[11]] + ylim(0,1) + labs(subtitle = "(b)"), 
+                                     grafs[[12]] + ylim(0,1) + labs(subtitle = "(b)"), ncol = 2)
+
+ggsave('perguntas_acidente.pdf', fig_acidente, units = "in", width = 11, height = 5)
+
+lista_tabelas_transito[[10]]
+lista_tabelas_transito[[12]]
+```
+
+## Oq era no momento do acidente? -----
+```{r momento}
+ggsave('perguntas_acidente2.pdf',grafs[[13]], units = "in", width = 11, height = 5)
+
+lista_tabelas_transito[[13]]
+```
+
+
+## Efeitos ----
+```{r efeitos}
+fig_efeitos = gridExtra::grid.arrange(grafs[[14]] + ylim(0,1) + labs(subtitle = "(a)"), 
+                                       #grafs[[11]] + ylim(0,1) + labs(subtitle = "(b)"), 
+                                       grafs[[15]] + ylim(0,1) + labs(subtitle = "(b)"), ncol = 2)
+
+
+ggsave('perguntas_efeitos.pdf',fig_efeitos, units = "in", width = 11, height = 5)
+
+lista_tabelas_transito[[14]]
+lista_tabelas_transito[[15]]
+```
+
+## Atendimento e Sequelas: 
+```{r atendimentos}
+fig_atendimentos = gridExtra::grid.arrange(grafs[[16]] + ylim(0,1) + labs(subtitle = "(a)"), 
+                                      #grafs[[11]] + ylim(0,1) + labs(subtitle = "(b)"), 
+                                      grafs[[17]] + ylim(0,1) + labs(subtitle = "(b)"), ncol = 1)
+
+
+ggsave('perguntas_atendimentos.pdf',fig_atendimentos, units = "in", width = 11, height = 7)
+
+lista_tabelas_transito[[16]]
+lista_tabelas_transito[[17]]
+
+```
+
+```{r sequelas}
+fig_sequelas = gridExtra::grid.arrange(grafs[[18]] + ylim(0,1) + labs(subtitle = "(a)"), 
+                                           #grafs[[11]] + ylim(0,1) + labs(subtitle = "(b)"), 
+                                           grafs[[19]] + ylim(0,1) + labs(subtitle = "(b)"), ncol = 2)
+
+
+lista_tabelas_transito[[18]]
+lista_tabelas_transito[[19]]
+
+ggsave('perguntas_sequelas.pdf',fig_sequelas, units = "in", width = 11, height = 5)
+
+```
+
+```{r trabalho}
+####### Acidentes de Trabalho
+ggsave('perguntas_trabalho.pdf',grafs[[20]], units = "in", width = 11, height = 5)
+
+fig_acidentes = gridExtra::grid.arrange(grafs[[21]] + ylim(0,1) + labs(subtitle = "(a)"), 
+                                       grafs[[22]] + ylim(0,1) + labs(subtitle = "(b)"), 
+                                       grafs[[23]] + ylim(0,1) + labs(subtitle = "(c)"), ncol = 3)
+
+ggsave('perguntas_aci_trabalho.pdf',fig_acidentes, units = "in", width = 11, height = 5)
+
+```
+
+## Testes e mais info (transito) 
+
+```{r teste}
+dados_sim_acidente = dados_transito[!is.na(dados_transito$O009) & dados_transito$O009 == "Sim",]
+
+table(dados_sim_acidente$O00101, dados_sim_acidente$O00201) |> xtable(digits = 0)
+
+table(dados_O$O00101, dados_O$O00201) |> xtable(digits = 4)
+```
+
+## Testando se motoqueiros são superrepresentados
+```{r te}
+tipo_contra_acidentes = matrix(c(672, 11887, 727, 10516, 296, 19482, 562, 48961), byrow = T, ncol = 2)
+
+colnames(tipo_contra_acidentes) = c("Acidentes", "Total de Pessoas")
+row.names(tipo_contra_acidentes) = c("Ambos", "Apenas Moto","Apenas Automóvel","Nenhum")
+
+tipo_contra_acidentes |> xtable(digits = 0)
+
+chisq.test(tipo_contra_acidentes)
+```
+
+## Cruzando uso de celular com acidentes
+```{r alta velc}
+
+table(dados_transito$O00802, dados_transito$O009) |> chisq.test()
+```
+
+## Cruzando alta velocidade com acidentes
+```{r}
+table(dados_transito$O00803, dados_transito$O009) |> chisq.test()
+```
+
+### Outras informações interessantes
+```{r}
+
+print("Posição da pessoa x deixou de fazer algo em virtude do acidente")
+x = table(dados_transito$O01102, dados_transito$O01401)
+aux_x = cbind(x, paste0(100*round(prop.table(x, margin = 1),3),'%')[1:nrow(x)])
+cbind(aux_x,paste0(100*round(prop.table(x, margin = 1),3),'%')[(nrow(x) + 1):(2*nrow(x))] ) |> xtable()
+
+print("Posição da pessoa x recebeu algum tipo de atendimento")
+x = table(dados_transito$O01102, dados_transito$O01501)
+aux_x = cbind(x, paste0(100*round(prop.table(x, margin = 1),3),'%')[1:nrow(x)])
+cbind(aux_x,paste0(100*round(prop.table(x, margin = 1),3),'%')[(nrow(x) + 1):(2*nrow(x))] ) |> xtable()
+
+print("Posição da pessoa x internado por mais de 24horas")
+x = table(dados_transito$O01102, dados_transito$O019)
+cbind(x, prop.table(x, margin = 1)) #|> xtable()
+
+print("Posição da pessoa x sequelas físicas permanentes")
+x = table(dados_transito$O01102, dados_transito$O02001)
+cbind(x, prop.table(x, margin = 1)) #|> xtable()
+```
+
+# Análise de Correspondência múltipla
+###  O !is.na() é pra tirar os NAs das variáveis
+
+```{r filtragem 2}
+indices = which(colnames(dados_O) %in% c('O00101','O00501',
+                                         'O00201','O00801','O009'
+                                         #'O021'
+                                         ))
+
+dados_O_5_variaveis_tratados = dados_O[, ..indices]
+
+dados_O_5_variaveis_tratados$O00101 = ifelse(dados_O_5_variaveis_tratados$O00101  == 1, 'Sim', 'Não')
+
+dados_O_5_variaveis_tratados$O00501 = ifelse(dados_O_5_variaveis_tratados$O00501  == 1, '1 - Não se Aplica',
+                                          ifelse(dados_O_5_variaveis_tratados$O00501  == 2, '2 - Sempre', 
+                                             ifelse(dados_O_5_variaveis_tratados$O00501  == 3, '3 - Quase Sempre',
+                                                    ifelse(dados_O_5_variaveis_tratados$O00501  == 4, "4 - As vezes",
+                                                           ifelse(dados_O_5_variaveis_tratados$O00501  == 5, "5 - Raramente",
+                                                                  "6 - Nunca")))))
+
+dados_O_5_variaveis_tratados$O00201 = ifelse(dados_O_5_variaveis_tratados$O00201  == 1, 'Sim', "Não")
+
+dados_O_5_variaveis_tratados$O00801 = ifelse(dados_O_5_variaveis_tratados$O00801  == 1, '1 - Não se Aplica',
+                                             ifelse(dados_O_5_variaveis_tratados$O00801  == 2, '2 - Sempre', 
+                                                    ifelse(dados_O_5_variaveis_tratados$O00801  == 3, '3 - Quase Sempre',
+                                                           ifelse(dados_O_5_variaveis_tratados$O00801  == 4, "4 - As vezes",
+                                                                  ifelse(dados_O_5_variaveis_tratados$O00801  == 5, "5 - Raramente",
+                                                                         "6 - Nunca")))))
+
+dados_O_5_variaveis_tratados$O009 = ifelse(dados_O_5_variaveis_tratados$O009  == 1, 'Sim', 'Não')
+```
+
+```{r mca}
+res_mca = MCA(dados_O_5_variaveis_tratados[!is.na(dados_O_5_variaveis_tratados$O00101),], graph = F)
+
+eig.val = get_eigenvalue(res_mca)
+
+fviz_screeplot(res_mca, addlabels = TRUE, ylim = c(0, 45)) +
+  labs(title = "", y = "Variância Explicada", x = "Componentes")
+
+ggsave('scree_corr.pdf', units = 'in', width = 10, height = 5)
+```
+
+```{r screeplot}
+cores = res_mca$var$coord[,1:2] |> kmeans(5)
+
+
+fviz_mca_var(res_mca, choice = "var.cat", 
+             repel = TRUE, # Avoid text overlapping (slow)
+             ggtheme = theme_minimal(),
+             col.var = cores$cluster,
+             gradient.cols = c("orange", "darkblue")) + 
+             labs(title = "")
+
+ggsave('acm_cat.pdf', units = 'in', width = 10, height = 5)
+```
+
+```{r varplot}
+#cores = res_mca$var$coord[,1:2] |> kmeans(5)
+
+
+fviz_mca_var(res_mca, choice = "var", 
+             repel = TRUE, # Avoid text overlapping (slow)
+             ggtheme = theme_minimal(),
+             gradient.cols = c("salmon", "darkblue")) +
+  labs(title = "")
+
+ggsave('acm_var.pdf', units = 'in', width = 10, height = 5)
+```
+
+```{r quali}
+fviz_mca_var(res_mca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, # Avoid text overlapping
+             ggtheme = theme_minimal()) +
+  labs(title = "Qualidade da representação") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave('acm_qualidade12.pdf', units = 'in', width = 7, height = 5)
+```
+
+```{r cos2}
+fviz_mca_var(res_mca, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, # avoid text overlapping (slow)
+             ggtheme = theme_minimal()) +
+  labs(title = "Contribuição") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave('contrib12.pdf', units = 'in', width = 7, height = 5)
+```
+
+```{r}
+f1 = fviz_contrib(res_mca, choice = "var", axes = 1, top = 15)+
+  labs(title = "Contribuição (dimensão 1)", y = "Contribuição (%)") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+f2 = fviz_contrib(res_mca, choice = "var", axes = 2, top = 15)+
+  labs(title = "Contribuição (dimensão 2)", y = "Contribuição (%)") +
+  theme(plot.title = element_text(hjust = 0.5))
+  
+f1f2 = gridExtra::grid.arrange(f1, f2, ncol = 2)
+
+ggsave('contrib.pdf', f1f2, units = 'in', width = 10, height = 5)
+```
+
+## 2 com 3;
+
+```{r planos}
+cores = res_mca$var$coord[,c(1,3)] |> kmeans(5)
+
+
+p1 = fviz_mca_var(res_mca, choice = "var.cat", 
+             repel = TRUE, # Avoid text overlapping (slow)
+             ggtheme = theme_minimal(),
+             axes = c(1,3),
+             col.var = cores$cluster,
+             gradient.cols = c("orange", "darkblue")) + 
+             labs(title = "Plano Fatorial (dimensão 1 e 3)")
+
+cores = res_mca$var$coord[,c(2,3)] |> kmeans(5)
+
+p2 = fviz_mca_var(res_mca, choice = "var.cat", 
+             repel = TRUE, # Avoid text overlapping (slow)
+             ggtheme = theme_minimal(),
+             col.var = cores$cluster,
+             axes = c(2,3),
+             gradient.cols = c("orange", "darkblue")) + 
+             labs(title = "Plano Fatorial (dimensão 2 e 3)")
+
+ggsave('acm_cat2.pdf', gridExtra::grid.arrange(p1, p2, ncol = 2), units = 'in', width = 10, height = 5)
+```
+
+```{r contrib2}
+f1 = fviz_contrib(res_mca, choice = "var", axes = 1, top = 15)+
+  labs(title = "Contribuição: Dimensão 1;", y = "Contribuição (%)") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+f2 = fviz_contrib(res_mca, choice = "var", axes = 3, top = 15)+
+  labs(title = "Dimensão 2;", y = "Contribuição (%)") +
+  theme(plot.title = element_text(hjust = 0.5))
+  
+f3 = fviz_contrib(res_mca, choice = "var", axes = 3, top = 15)+
+  labs(title = "Dimensão 3.", y = "Contribuição (%)") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+f1f2 = gridExtra::grid.arrange(f1, f2, f3, ncol = 3)
+
+ggsave('contrib2.pdf', f1f2, units = 'in', width = 10, height = 5)
+```
+
+```{r varplot2}
+#cores = res_mca$var$coord[,1:2] |> kmeans(5)
+
+
+fviz_mca_var(res_mca, choice = "var", 
+             repel = TRUE, # Avoid text overlapping (slow)
+             ggtheme = theme_minimal(),
+             gradient.cols = c("salmon", "darkblue")) +
+  labs(title = "")
+
+ggsave('acm_var.pdf', units = 'in', width = 7, height = 5)
+```
+
+```{r quali2}
+fviz_mca_var(res_mca, col.var = "cos2",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, # Avoid text overlapping
+             ggtheme = theme_minimal()) +
+  labs(title = "Qualidade da representação") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave('acm_qualidade12.pdf', units = 'in', width = 7, height = 5)
+```
+
+```{r cos22}
+fviz_mca_var(res_mca, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, # avoid text overlapping (slow)
+             ggtheme = theme_minimal()) +
+  labs(title = "Contribuição") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+ggsave('contrib12.pdf', units = 'in', width = 7, height = 5)
+```
