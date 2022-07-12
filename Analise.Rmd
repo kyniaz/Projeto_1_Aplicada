@@ -1,6 +1,6 @@
 ---
-title: "Projeto 1 v2"
-author: "André"
+title: "Projeto 1"
+author: "André e Robson"
 date: "04/07/2022"
 output: html_document
 ---
